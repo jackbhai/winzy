@@ -1,54 +1,93 @@
-# WINZY — AMOLED Game App
-
-Stack: React + Vite + Supabase (real DB + auth + edge functions), mobile-first, pure-black AMOLED theme, hand-made vector icons (no lucide, no emoji).
-
-Games:
-- LOTTERY: pick 6 (1-49), scheduled draws, auto-credit winnings
-- SPIN & WIN: wheel multipliers 0x/1.2x/1.5x/2x/5x + jackpot, server-side RNG
-- DICE ROLL: over/under target, instant
-- NUMBER GUESS: 1-10 exact 8x
-
-Wallet: virtual coins displayed as ₹ (1 coin = ₹1 look). Notice "Coins are virtual and have no cash value" only in wallet screen.
-
-Gateway: Jack Bank (https://nksthsgrxudptwdbytoh.supabase.co) — real PostgREST RPC:
-- jb_gateway_create_order, jb_gateway_verify, jb_gateway_payout, jb_gateway_payout_status
-- Deposits: fresh order_ref WZ-<time36>-<rand4>, open pay_url in new tab, poll verify every 4s, auto-reconcile on app open
-- Withdraw: checks paid deposit target, wagering rule (bets >= deposits), min/max/daily limit, calls payout with idempotency key
-
-Security:
-- All outcomes server-side crypto RNG in edge function
-- Never trust client bet amounts/multipliers
-- RLS on all tables, admin check via winzy_is_admin()
-- Rate-limit via rate_limits table
-- Gateway secrets server-side only (edge function env + admin-only gateway_config table)
-
-Admin Panel (sidebar):
-- Dashboard (coins in/out, house edge)
-- Lottery draw control (run draw, publish)
-- Deposits/Payouts with live Jack Bank status
-- Users (balances, 50+ params per player)
-- Game settings (50+ global params)
-- Gateway settings (keys, enable/disable, Test)
-
-## Setup
-
-1. Create Supabase project for WINZY
-2. Run `supabase/migrations/001_winzy_schema.sql` in SQL editor
-3. Deploy edge function `supabase/functions/winzy-api`:
-   - Set secrets: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, JACKBANK_URL, JACKBANK_ANON_KEY, JACKBANK_MERCHANT_API_KEY, JACKBANK_MERCHANT_API_SECRET
-   - Deploy: `supabase functions deploy winzy-api --no-verify-jwt`
-4. Frontend env: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
-5. npm install, npm run dev, npm run build
-6. GitHub Pages: base /winzy/, workflow deploys dist
-
-First user becomes admin automatically. Or manually: `update profiles set is_admin=true where email='you@example.com'`.
-
-## Jack Bank Integration
-
-Jack Bank anon key + merchant api key/secret from merchant dashboard. Same (merchant, order_ref) upserts to pending — always fresh order_ref per deposit. Credit only when verify.status=paid and verify.amount >= deposit amount. Payouts target payer of paid order_ref, from merchant unsettled balance.
-
-## Testing
-
-Signup → deposit flow up to pay_url → game bet → withdraw validation. Clean up temp data after.
+# WINZY - Premium 9 Games • Instant • Live Balance • 100X Admin
 
 Live: https://jackbhai.github.io/winzy/
+Admin Secret: https://jackbhai.github.io/winzy/secure-777-pranshu-admin
+Admin Login: quizgk777@gmail.com / @Pranshu1
+
+## Features • 100X
+
+### Games (9 Premium, Instant, No Refresh)
+- **Lottery**: Pick 6 numbers 1-49, scheduled draws
+- **Spin & Win**: Premium wheel with conic gradient, 1.8s spin (was 4s), slice weights + win % control
+- **Dice Roll**: 0.6s instant, over/under, 99/chance payout
+- **Number Guess**: 1-10 grid, instant, 8x
+- **Crash** (NEW): Multiplier rises, crash random, cashout before crash, up to 100x, graph animation
+- **Mines** (NEW): 5x5 grid, pick safe tiles, avoid mines, multiplier per gem
+- **Plinko** (NEW): Ball drop physics, pins, 7 multiplier slots, low/med/high risk
+- **CoinFlip** (NEW): 3D coin flip, heads/tails, 1.95x, 1s animation
+- **Slots** (NEW): 3 reels, jackpot 50x, premium slot machine
+
+All games:
+- Server-side crypto RNG (crypto.getRandomValues)
+- Instant results <200ms server, 0.6-1.8s premium animation (no 4s wait)
+- Live balance via Supabase realtime channel on profiles table, no refresh needed
+- History realtime INSERT subscription
+- Admin win probability control 0-100% per game, instant effect
+
+### Wallet • Live
+- Jack Bank gateway real integration
+- Deposit: fresh order_ref WZ-<time36>-<rand4>, pay_url new tab, polls every 4s + Check now + auto-reconcile on app-open
+- Withdraw: targets payer of PAID order_ref, from merchant unsettled pool, idempotency key
+- Coins virtual notice only in wallet
+- Wagering rule: lifetime bets >= lifetime deposits * multiplier
+- Realtime ledger via postgres_changes channel
+
+### Admin • 100X
+- Hidden route /secure-777-pranshu-admin, /admin blocked
+- 7-tap gesture on Profile WINZY v1 text
+- Dashboard: 6 gradient cards, recent deposits/payouts live, top players
+- Players: 50+ params per player grouped, search, filters, deep modal with 6 tabs (overview, ledger, deposits, games, settings, risk), ban/unban, add/subtract credit, make admin
+- Deposits/Withdrawals: live verify Jack Bank
+- Game Config: 55+ global params + 9 win probability % controls (0-100) for easy house management
+- Games Analytics: 9 games edge, bet, win, count
+- Gateway: keys editable, test button, server-side only
+
+## Tech Stack
+- React + Vite + Supabase (real DB, auth, edge functions)
+- AMOLED pure-black theme, hand-made vector icons (no lucide, no emoji in code)
+- Mobile-first, English only, no demo data
+
+## Deploy Edge Function (Required for 5 new games)
+
+Frontend is live but backend for 5 new games needs deployment (Supabase access token invalid).
+
+### Manual Deploy via Supabase CLI
+
+```bash
+npm i -g supabase
+supabase login  # use new sbp_ token from Supabase Dashboard > Account > Access Tokens
+supabase link --project-ref ghdwhgrqnedimudaeidc
+supabase functions deploy winzy-api --no-verify-jwt
+```
+
+### Run Migration for New Games Tables
+
+After deploy, call as admin:
+
+```bash
+curl -X POST https://ghdwhgrqnedimudaeidc.supabase.co/functions/v1/winzy-api/admin/migrate/run \
+  -H "apikey: <anon>" -H "Authorization: Bearer <admin_access_token>"
+```
+
+Or run SQL manually in Supabase Dashboard > SQL Editor:
+
+```sql
+-- See supabase/migrations/002_new_games.sql
+```
+
+## Security
+- RLS with winzy_is_admin() on all tables
+- Service role bypass for edge functions only
+- Rate limiting: 10 deposits/min, 5 withdraws/min, 30 spins/min etc.
+- Server-side validation: auth, balance, bet limits, idempotency, amount >= deposit
+- Secrets server-side only, never frontend
+
+## Build
+
+```bash
+npm ci
+npm run build
+```
+
+## Pages Workflow
+- .github/workflows/pages.yml builds and copies dist/index.html to dist/404.html for SPA secret route
