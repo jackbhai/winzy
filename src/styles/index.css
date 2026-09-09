@@ -1,0 +1,164 @@
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #000000;
+  --bg2: #0a0a0a;
+  --bg3: #141414;
+  --bg4: #1e1e1e;
+  --border: #222;
+  --border2: #2a2a2a;
+  --text: #ffffff;
+  --text2: #a1a1a1;
+  --text3: #666;
+  --accent: #ffffff;
+  --accent2: #e5e5e5;
+  --green: #00ff88;
+  --red: #ff3b30;
+  --yellow: #ffcc00;
+  --blue: #0a84ff;
+  --radius: 16px;
+  --radius2: 24px;
+}
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+body { background: #000; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* AMOLED scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+::-webkit-scrollbar-track { background: #000; }
+
+/* Utility */
+.flex { display:flex; }
+.col { flex-direction: column; }
+.center { align-items:center; justify-content:center; }
+.between { justify-content: space-between; }
+.gap4 { gap:4px; } .gap8 { gap:8px; } .gap12 { gap:12px; } .gap16 { gap:16px; } .gap24 { gap:24px; }
+.p12 { padding:12px; } .p16 { padding:16px; } .p20 { padding:20px; } .p24 { padding:24px; }
+.mt8 { margin-top:8px; } .mt12 { margin-top:12px; } .mt16 { margin-top:16px; } .mt24 { margin-top:24px; }
+.mb8 { margin-bottom:8px; } .mb16 { margin-bottom:16px; }
+.w100 { width:100%; }
+
+/* Buttons */
+.btn {
+  border:none; outline:none; cursor:pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight:600; letter-spacing:0.02em;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary { background:#fff; color:#000; }
+.btn-primary:active { transform: scale(0.97); background:#e5e5e5; }
+.btn-ghost { background: #111; color:#fff; border:1px solid #222; }
+.btn-ghost:active { background:#1a1a1a; transform: scale(0.98); }
+.btn-danger { background:#1a0a0a; color:#ff453a; border:1px solid #2a1515; }
+.btn:disabled { opacity:0.4; pointer-events:none; }
+
+/* Inputs */
+.input {
+  width:100%; background:#0a0a0a; border:1px solid #222; color:#fff;
+  padding:14px 16px; border-radius:12px; font-size:15px; outline:none;
+  font-family:'Space Grotesk', sans-serif;
+}
+.input:focus { border-color:#444; background:#111; }
+.input::placeholder { color:#555; }
+
+/* Cards */
+.card {
+  background: #0a0a0a;
+  border:1px solid #1a1a1a;
+  border-radius: var(--radius);
+  padding:16px;
+}
+.card2 {
+  background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
+  border:1px solid #222;
+  border-radius: var(--radius2);
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed; bottom:0; left:0; right:0;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(20px);
+  border-top:1px solid #1a1a1a;
+  display:flex; justify-content:space-around;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  z-index:100;
+}
+.bottom-nav button {
+  background:none; border:none; color:#555; display:flex; flex-direction:column; align-items:center; gap:4px;
+  font-size:10px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; cursor:pointer; padding:6px 16px;
+  transition: color 0.2s;
+}
+.bottom-nav button.active { color:#fff; }
+.bottom-nav button svg { width:22px; height:22px; }
+
+/* Admin sidebar */
+.admin-layout { display:flex; min-height:100vh; }
+.admin-sidebar {
+  width:260px; background:#050505; border-right:1px solid #111;
+  padding:20px 12px; position:fixed; top:0; bottom:0; left:0; overflow-y:auto; z-index:50;
+}
+.admin-main { margin-left:260px; flex:1; padding:24px; background:#000; min-height:100vh; }
+@media(max-width:900px){
+  .admin-sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+  .admin-sidebar.open { transform: translateX(0); }
+  .admin-main { margin-left:0; padding:16px; padding-top:70px; }
+}
+
+/* Wheel */
+.wheel-container { position:relative; width:300px; height:300px; margin:0 auto; }
+.wheel {
+  width:100%; height:100%; border-radius:50%;
+  border:4px solid #222;
+  position:relative; overflow:hidden;
+  transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+  background: conic-gradient(from 0deg, #111 0deg, #222 60deg, #111 120deg, #1a1a1a 180deg, #111 240deg, #222 300deg);
+}
+.wheel-pointer {
+  position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-top:20px solid #fff;
+  z-index:10; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+}
+
+/* Animations */
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.animate-up { animation: slideUp 0.3s ease; }
+.shimmer { background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%); background-size:200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* Lottery balls */
+.ball {
+  width:44px; height:44px; border-radius:50%; background:#fff; color:#000;
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;
+  border:2px solid #000; box-shadow: 0 2px 10px rgba(255,255,255,0.15);
+}
+.ball.selected { background:#000; color:#fff; border-color:#fff; }
+.ball.winning { background:#00ff88; color:#000; border-color:#00ff88; }
+
+/* Dice */
+.dice-box {
+  width:100px; height:100px; background:#0a0a0a; border:2px solid #222; border-radius:16px;
+  display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:800;
+  margin:0 auto;
+}
+
+/* Toast */
+.toast {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  background:#111; border:1px solid #222; color:#fff; padding:12px 18px; border-radius:999px;
+  font-size:13px; font-weight:600; z-index:9999; max-width:90vw; text-align:center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  animation: slideUp 0.25s ease;
+}

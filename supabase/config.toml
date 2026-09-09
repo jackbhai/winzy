@@ -1,0 +1,51 @@
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost:54321"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+port = 54325
+file_size_limit = "50MiB"
+import_path = "./storage"
+export_path = "./storage"
+
+[auth]
+enabled = true
+port = 54325
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://jackbhai.github.io/winzy/"]
+jwt_expiry = 3600
+enable_signup = true
+enable_confirmations = false
+enable_manual_linking = true
+third_party_auth = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false
+enable_confirmations = false
+
+[functions.winzy-api]
+enabled = true
+verify_jwt = false
+import_map = "./functions/winzy-api/import_map.json"
+entrypoint = "./functions/winzy-api/index.ts"
