@@ -2,20 +2,21 @@ import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { IconChart, IconWallet, IconTicket, IconUsers, IconSettings, IconBank, IconGame, IconShield, IconLogOut } from '../lib/icons'
 import { useAuth } from '../hooks/useAuth'
+import { ADMIN_BASE } from '../App'
 
 export function AdminSidebar({ open, onClose }: { open:boolean; onClose:()=>void }) {
   const nav = useNavigate()
   const loc = useLocation()
   const { signOut } = useAuth()
   const items = [
-    { path:'/admin', label:'Dashboard', icon: IconChart },
-    { path:'/admin/deposits', label:'Deposits', icon: IconBank },
-    { path:'/admin/withdrawals', label:'Withdrawals', icon: IconWallet },
-    { path:'/admin/lottery', label:'Lottery Draw', icon: IconTicket },
-    { path:'/admin/users', label:'Players', icon: IconUsers },
-    { path:'/admin/games', label:'Games', icon: IconGame },
-    { path:'/admin/settings', label:'Settings (50+)', icon: IconSettings },
-    { path:'/admin/gateway', label:'Gateway', icon: IconShield },
+    { path:`${ADMIN_BASE}`, label:'Dashboard', icon: IconChart },
+    { path:`${ADMIN_BASE}/deposits`, label:'Deposits', icon: IconBank },
+    { path:`${ADMIN_BASE}/withdrawals`, label:'Withdrawals', icon: IconWallet },
+    { path:`${ADMIN_BASE}/lottery`, label:'Lottery Draw', icon: IconTicket },
+    { path:`${ADMIN_BASE}/users`, label:'Players', icon: IconUsers },
+    { path:`${ADMIN_BASE}/games`, label:'Games', icon: IconGame },
+    { path:`${ADMIN_BASE}/settings`, label:'Settings (50+)', icon: IconSettings },
+    { path:`${ADMIN_BASE}/gateway`, label:'Gateway', icon: IconShield },
   ]
   return (
     <>
@@ -24,6 +25,7 @@ export function AdminSidebar({ open, onClose }: { open:boolean; onClose:()=>void
           <div style={{ width:32, height:32, background:'#fff', color:'#000', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900 }}>W</div>
           WINZY ADMIN
         </div>
+        <div style={{ fontSize:10, color:'#333', marginBottom:12, letterSpacing:'0.1em' }}>HIDDEN • SECURE-777</div>
         <div className="flex col gap4">
           {items.map(it=>{
             const active = loc.pathname === it.path

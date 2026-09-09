@@ -22,6 +22,9 @@ import AdminGateway from './pages/Admin/Gateway'
 import AdminGames from './pages/Admin/Games'
 import { IconMenu } from './lib/icons'
 
+// Secret admin base — hidden, not guessable via /admin
+export const ADMIN_BASE = '/secure-777-pranshu-admin'
+
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) return <div style={{ minHeight:'100vh', background:'#000', display:'flex', alignItems:'center', justifyContent:'center', color:'#555' }}>Loading...</div>
@@ -31,7 +34,6 @@ function Protected({ children }: { children: React.ReactNode }) {
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth()
-  const loc = useLocation()
   if (loading) return <div style={{ minHeight:'100vh', background:'#000', display:'flex', alignItems:'center', justifyContent:'center', color:'#555' }}>Loading...</div>
   if (!user) return <Navigate to="/auth" replace />
   if (!profile?.is_admin) return <Navigate to="/" replace />
@@ -50,6 +52,9 @@ function UserApp() {
         <Route path="/spin" element={<Spin />} />
         <Route path="/dice" element={<Dice />} />
         <Route path="/guess" element={<Guess />} />
+        {/* Block easy /admin access — redirect to home */}
+        <Route path="/admin" element={<Navigate to="/" replace />} />
+        <Route path="/admin/*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />
     </>
@@ -62,9 +67,9 @@ function AdminApp() {
     <div className="admin-layout">
       <AdminSidebar open={open} onClose={()=>setOpen(false)} />
       <div className="admin-main">
-        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }} className="md:hidden">
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
           <button onClick={()=>setOpen(true)} style={{ background:'#111', border:'1px solid #222', borderRadius:10, padding:8 }}><IconMenu /></button>
-          <div style={{ fontWeight:800 }}>WINZY ADMIN</div>
+          <div style={{ fontWeight:800 }}>WINZY ADMIN • Hidden</div>
         </div>
         <Routes>
           <Route path="/" element={<AdminDashboard />} />
@@ -87,7 +92,8 @@ export default function App() {
       <BrowserRouter basename="/winzy/">
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/admin/*" element={<AdminProtected><AdminApp /></AdminProtected>} />
+          {/* Secret admin route — only known to owner */}
+          <Route path={`${ADMIN_BASE}/*`} element={<AdminProtected><AdminApp /></AdminProtected>} />
           <Route path="/*" element={<Protected><UserApp /></Protected>} />
         </Routes>
       </BrowserRouter>

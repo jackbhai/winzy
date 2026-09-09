@@ -1,12 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { TopBar, PageWrap } from '../components/Layout'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
-import { IconUser, IconLogOut, IconSettings } from '../lib/icons'
+import { IconLogOut } from '../lib/icons'
+import { ADMIN_BASE } from '../App'
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth()
   const nav = useNavigate()
+  const [tap, setTap] = useState(0)
+  const [showAdmin, setShowAdmin] = useState(false)
+
+  const handleSecretTap = () => {
+    const newTap = tap + 1
+    setTap(newTap)
+    if (newTap >= 7) {
+      if (profile?.is_admin) {
+        setShowAdmin(true)
+      } else {
+        // even non-admin tapping 7 times does nothing visible
+      }
+      setTap(0)
+    }
+    setTimeout(()=> setTap(0), 2000)
+  }
+
   return (
     <PageWrap>
       <TopBar title="PROFILE" />
@@ -16,7 +34,7 @@ export default function Profile() {
           <div>
             <div style={{ fontWeight:800, fontSize:18 }}>{profile?.username||'Player'}</div>
             <div style={{ fontSize:12, color:'#777', marginTop:2 }}>{user?.email}</div>
-            <div style={{ fontSize:11, color:'#555', marginTop:4 }} className="mono">{profile?.id.slice(0,8)}... {profile?.is_admin?'• ADMIN':''}</div>
+            <div style={{ fontSize:11, color:'#555', marginTop:4 }} className="mono">{profile?.id.slice(0,8)}...</div>
           </div>
         </div>
 
@@ -27,13 +45,17 @@ export default function Profile() {
           <div className="flex between"><span style={{ color:'#777', fontSize:13 }}>Lifetime Wins</span><span className="mono" style={{ color:'#00ff88' }}>₹{Number(profile?.lifetime_wins||0).toFixed(2)}</span></div>
         </div>
 
-        {profile?.is_admin && (
-          <button className="btn btn-ghost w100" onClick={()=>nav('/admin')}><IconSettings size={16}/> Open Admin Panel</button>
+        {/* Hidden admin access — only after 7 taps and if is_admin */}
+        {showAdmin && profile?.is_admin && (
+          <button className="btn btn-ghost w100" onClick={()=>nav(ADMIN_BASE)} style={{ border:'1px dashed #333' }}>Admin Panel (Hidden Access)</button>
         )}
 
         <button className="btn btn-danger w100" onClick={async()=>{ await signOut(); nav('/auth') }}><IconLogOut size={16}/> Logout</button>
 
-        <div style={{ color:'#333', fontSize:11, textAlign:'center', marginTop:8 }}>WINZY v1 • AMOLED • Fair • Virtual coins</div>
+        <div onClick={handleSecretTap} style={{ color:'#222', fontSize:10, textAlign:'center', marginTop:8, userSelect:'none', padding:12 }}>
+          WINZY v1 • AMOLED • Fair • Virtual coins {tap>0 ? `• ${tap}/7` : ''}
+        </div>
+        <div style={{ color:'#111', fontSize:9, textAlign:'center' }}>Tap 7 times for admin (only admin accounts)</div>
       </div>
     </PageWrap>
   )
