@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { IconBolt } from '../lib/icons'
+import { ADMIN_BASE } from '../App'
 
 export default function Auth() {
   const [mode, setMode] = useState<'login'|'signup'>('login')
@@ -21,14 +22,28 @@ export default function Auth() {
         const { data, error } = await supabase.auth.signUp({ email, password: pass })
         if (error) throw error
         if (data.user) {
-          // profile created via trigger; update username
           await supabase.from('profiles').update({ username }).eq('id', data.user.id)
-          setMsg('Account created! Check email if confirmation required.')
-          setTimeout(()=> nav('/'), 800)
+          // check if new user is admin (first user)
+          const { data: prof } = await supabase.from('profiles').select('is_admin').eq('id', data.user.id).single()
+          setMsg('Account created!')
+          setTimeout(()=> {
+            if (prof?.is_admin) nav(ADMIN_BASE)
+            else nav('/')
+          }, 800)
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass })
         if (error) throw error
+        // check admin
+        const uid = data.user?.id
+        if (uid) {
+          const { data: prof } = await supabase.from('profiles').select('is_admin').eq('id', uid).single()
+          if (prof?.is_admin) {
+            setMsg('Admin login success — redirecting to hidden admin...')
+            setTimeout(()=> nav(ADMIN_BASE), 600)
+            return
+          }
+        }
         nav('/')
       }
     } catch (err:any) {
@@ -54,11 +69,11 @@ export default function Auth() {
         <form onSubmit={submit} className="flex col gap12">
           {mode==='signup' && <input className="input" placeholder="Username" value={username} onChange={e=>setUsername(e.target.value)} required />}
           <input className="input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-          <input className="input" type="password" placeholder="Password (min 6)" value={pass} onChange={e=>setPass(e.target.value)} required minLength={6} />
+          <input className="input" type="password" placeholder="Password (min 6, @ allowed)" value={pass} onChange={e=>setPass(e.target.value)} required minLength={6} />
           <button className="btn btn-primary w100 mt8" disabled={loading} type="submit">{loading?'Please wait...': mode==='login'?'Login':'Create account'}</button>
         </form>
 
-        {msg && <div style={{ marginTop:16, padding:12, background:'#111', border:'1px solid #222', borderRadius:12, fontSize:13, color: msg.includes('created')?'#00ff88':'#ffcc00' }}>{msg}</div>}
+        {msg && <div style={{ marginTop:16, padding:12, background:'#111', border:'1px solid #222', borderRadius:12, fontSize:13, color: msg.includes('created') || msg.includes('Admin') ?'#00ff88':'#ffcc00' }}>{msg}</div>}
 
         <div style={{ marginTop:20, display:'flex', alignItems:'center', gap:8, color:'#555', fontSize:12 }}>
           <IconBolt size={14} color="#555" /> Secure • Server-side fairness • Virtual coins
@@ -66,7 +81,8 @@ export default function Auth() {
       </div>
 
       <div style={{ marginTop:'auto', paddingTop:24, color:'#444', fontSize:11, textAlign:'center' }}>
-        By continuing you agree virtual coins have no cash value.
+        By continuing you agree virtual coins have no cash value.<br/>
+        Admin: quizgk777@gmail.com is configured
       </div>
     </div>
   )
