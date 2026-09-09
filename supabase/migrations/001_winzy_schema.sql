@@ -1,15 +1,7 @@
 -- WINZY schema — AMOLED game app with Jack Bank gateway
--- Enable extensions
 create extension if not exists "uuid-ossp";
 
--- Helper: is admin
-create or replace function public.winzy_is_admin()
-returns boolean language sql security definer set search_path = public
-as $$
-  select exists(select 1 from public.profiles where id = auth.uid() and is_admin = true);
-$$;
-
--- Profiles
+-- 1. Profiles table first (no policies yet)
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
@@ -21,15 +13,27 @@ create table if not exists public.profiles (
   is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
-alter table public.profiles enable row level security;
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles for select to authenticated using (id = auth.uid() or public.winzy_is_admin());
-drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
-drop policy if exists "profiles_insert" on public.profiles;
-create policy "profiles_insert" on public.profiles for insert to authenticated with check (true);
+-- Ensure columns exist if table was pre-existing
+alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists username text;
+alter table public.profiles add column if not exists balance numeric(16,2) default 0;
+alter table public.profiles add column if not exists lifetime_deposits numeric(16,2) default 0;
+alter table public.profiles add column if not exists lifetime_bets numeric(16,2) default 0;
+alter table public.profiles add column if not exists lifetime_wins numeric(16,2) default 0;
+alter table public.profiles add column if not exists is_admin boolean default false;
+alter table public.profiles add column if not exists created_at timestamptz default now();
 
--- Trigger to create profile on signup
+-- 2. Helper functions
+create or replace function public.winzy_is_admin()
+returns boolean language plpgsql security definer set search_path = public
+as $$
+begin
+  return exists(select 1 from public.profiles where id = auth.uid() and is_admin = true);
+exception when undefined_column then
+  return false;
+end;
+$$;
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public
 as $$
@@ -37,15 +41,24 @@ begin
   insert into public.profiles (id, email, username, balance)
   values (new.id, new.email, coalesce(new.raw_user_meta_data->>'username', split_part(new.email,'@',1)), 0)
   on conflict (id) do nothing;
-  -- first user becomes admin
   update public.profiles set is_admin = true where id = new.id and (select count(*) from public.profiles where is_admin = true) = 0;
   return new;
 end;
 $$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
 
--- Game settings (50+ params)
+-- 3. RLS for profiles
+alter table public.profiles enable row level security;
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles for select to authenticated using (id = auth.uid() or public.winzy_is_admin());
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles for update to authenticated using (id = auth.uid() or public.winzy_is_admin()) with check (id = auth.uid() or public.winzy_is_admin());
+drop policy if exists "profiles_insert" on public.profiles;
+create policy "profiles_insert" on public.profiles for insert to authenticated with check (true);
+
+-- 4. Game settings (50+ params)
 create table if not exists public.game_settings (
   id int primary key,
   lottery_ticket_price numeric not null default 10,
@@ -115,7 +128,7 @@ drop policy if exists "game_settings_admin" on public.game_settings;
 create policy "game_settings_admin" on public.game_settings for all to authenticated using (public.winzy_is_admin()) with check (public.winzy_is_admin());
 insert into public.game_settings (id) values (1) on conflict (id) do nothing;
 
--- Gateway config (admin-only)
+-- 5. Gateway config (admin-only)
 create table if not exists public.gateway_config (
   id int primary key,
   jackbank_url text not null default 'https://nksthsgrxudptwdbytoh.supabase.co',
@@ -133,7 +146,7 @@ drop policy if exists "gateway_config_admin_only" on public.gateway_config;
 create policy "gateway_config_admin_only" on public.gateway_config for all to authenticated using (public.winzy_is_admin()) with check (public.winzy_is_admin());
 insert into public.gateway_config (id) values (1) on conflict (id) do nothing;
 
--- Player settings (50+ per player)
+-- 6. Player settings (50+ per player)
 create table if not exists public.player_settings (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   max_bet_lottery numeric,
@@ -197,7 +210,7 @@ create policy "player_settings_admin" on public.player_settings for all to authe
 drop policy if exists "player_settings_own_read" on public.player_settings;
 create policy "player_settings_own_read" on public.player_settings for select to authenticated using (user_id = auth.uid());
 
--- Wallet ledger
+-- 7. Wallet ledger
 create table if not exists public.wallet_ledger (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -215,7 +228,7 @@ drop policy if exists "ledger_select_own" on public.wallet_ledger;
 create policy "ledger_select_own" on public.wallet_ledger for select to authenticated using (user_id = auth.uid() or public.winzy_is_admin());
 create index if not exists ledger_user_idx on public.wallet_ledger(user_id, created_at desc);
 
--- Deposits
+-- 8. Deposits
 create table if not exists public.deposits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -234,7 +247,7 @@ create policy "deposits_own" on public.deposits for select to authenticated usin
 create index if not exists deposits_user_idx on public.deposits(user_id, created_at desc);
 create index if not exists deposits_order_ref_idx on public.deposits(order_ref);
 
--- Withdrawals
+-- 9. Withdrawals
 create table if not exists public.withdrawals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -251,7 +264,7 @@ drop policy if exists "withdrawals_own" on public.withdrawals;
 create policy "withdrawals_own" on public.withdrawals for select to authenticated using (user_id = auth.uid() or public.winzy_is_admin());
 create index if not exists withdrawals_user_idx on public.withdrawals(user_id, created_at desc);
 
--- Lottery draws
+-- 10. Lottery draws
 create table if not exists public.lottery_draws (
   id uuid primary key default gen_random_uuid(),
   draw_number int not null unique,
@@ -270,7 +283,7 @@ alter table public.lottery_draws enable row level security;
 drop policy if exists "lottery_draws_public" on public.lottery_draws;
 create policy "lottery_draws_public" on public.lottery_draws for select to authenticated using (true);
 
--- Lottery tickets
+-- 11. Lottery tickets
 create table if not exists public.lottery_tickets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -287,7 +300,7 @@ create policy "lottery_tickets_own" on public.lottery_tickets for select to auth
 create index if not exists lottery_tickets_draw_idx on public.lottery_tickets(draw_id);
 create index if not exists lottery_tickets_user_idx on public.lottery_tickets(user_id);
 
--- Spin history
+-- 12. Spin history
 create table if not exists public.spin_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -302,7 +315,7 @@ drop policy if exists "spin_own" on public.spin_history;
 create policy "spin_own" on public.spin_history for select to authenticated using (user_id = auth.uid() or public.winzy_is_admin());
 create index if not exists spin_user_idx on public.spin_history(user_id, created_at desc);
 
--- Dice history
+-- 13. Dice history
 create table if not exists public.dice_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -320,7 +333,7 @@ alter table public.dice_history enable row level security;
 drop policy if exists "dice_own" on public.dice_history;
 create policy "dice_own" on public.dice_history for select to authenticated using (user_id = auth.uid() or public.winzy_is_admin());
 
--- Guess history
+-- 14. Guess history
 create table if not exists public.guess_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -336,7 +349,7 @@ alter table public.guess_history enable row level security;
 drop policy if exists "guess_own" on public.guess_history;
 create policy "guess_own" on public.guess_history for select to authenticated using (user_id = auth.uid() or public.winzy_is_admin());
 
--- Rate limit table
+-- 15. Rate limit table
 create table if not exists public.rate_limits (
   user_id uuid not null references public.profiles(id) on delete cascade,
   action text not null,

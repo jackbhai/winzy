@@ -76,15 +76,15 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Helper: get gateway config (DB overrides env)
+  // Helper: get gateway config (DB overrides env) - supports both schemas
   async function getGatewayConfig() {
     const { data } = await serviceClient.from("gateway_config").select("*").eq("id", 1).single();
     const cfg = data || {};
     return {
-      url: cfg.jackbank_url || JB_URL_ENV,
-      anon_key: cfg.jackbank_anon_key || JB_ANON_ENV,
-      api_key: cfg.merchant_api_key || JB_MERCHANT_KEY_ENV,
-      api_secret: cfg.merchant_api_secret || JB_MERCHANT_SECRET_ENV,
+      url: cfg.jackbank_url || cfg.base_url || JB_URL_ENV,
+      anon_key: cfg.jackbank_anon_key || cfg.anon_key || JB_ANON_ENV,
+      api_key: cfg.merchant_api_key || cfg.api_key || JB_MERCHANT_KEY_ENV,
+      api_secret: cfg.merchant_api_secret || cfg.api_secret || JB_MERCHANT_SECRET_ENV,
       enabled: cfg.enabled ?? true,
     };
   }
