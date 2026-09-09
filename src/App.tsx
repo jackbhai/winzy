@@ -10,6 +10,11 @@ import Lottery from './pages/Lottery'
 import Spin from './pages/Spin'
 import Dice from './pages/Dice'
 import Guess from './pages/Guess'
+import Crash from './pages/Crash'
+import Mines from './pages/Mines'
+import Plinko from './pages/Plinko'
+import CoinFlip from './pages/CoinFlip'
+import Slots from './pages/Slots'
 import { BottomNav } from './components/Layout'
 import { AdminSidebar } from './components/AdminSidebar'
 import AdminDashboard from './pages/Admin/Dashboard'
@@ -52,6 +57,11 @@ function UserApp() {
         <Route path="/spin" element={<Spin />} />
         <Route path="/dice" element={<Dice />} />
         <Route path="/guess" element={<Guess />} />
+        <Route path="/crash" element={<Crash />} />
+        <Route path="/mines" element={<Mines />} />
+        <Route path="/plinko" element={<Plinko />} />
+        <Route path="/coinflip" element={<CoinFlip />} />
+        <Route path="/slots" element={<Slots />} />
         {/* Block easy /admin access — redirect to home */}
         <Route path="/admin" element={<Navigate to="/" replace />} />
         <Route path="/admin/*" element={<Navigate to="/" replace />} />
@@ -69,7 +79,7 @@ function AdminApp() {
       <div className="admin-main">
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
           <button onClick={()=>setOpen(true)} style={{ background:'#111', border:'1px solid #222', borderRadius:10, padding:8 }}><IconMenu /></button>
-          <div style={{ fontWeight:800 }}>WINZY ADMIN • Hidden</div>
+          <div style={{ fontWeight:800 }}>WINZY ADMIN • 9 Games • 100X</div>
         </div>
         <Routes>
           <Route path="/" element={<AdminDashboard />} />

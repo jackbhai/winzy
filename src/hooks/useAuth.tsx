@@ -18,9 +18,10 @@ type AuthCtx = {
   loading: boolean
   signOut: () => Promise<void>
   refresh: () => Promise<void>
+  updateBalance: (newBal:number)=>void
 }
 
-const Ctx = createContext<AuthCtx>({ user:null, profile:null, loading:true, signOut: async()=>{}, refresh: async()=>{} })
+const Ctx = createContext<AuthCtx>({ user:null, profile:null, loading:true, signOut: async()=>{}, refresh: async()=>{}, updateBalance: ()=>{} })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
@@ -38,6 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session.user)
       await loadProfile(session.user.id)
     }
+  }
+
+  const updateBalance = (newBal:number) => {
+    if(profile) setProfile({ ...profile, balance: newBal })
   }
 
   useEffect(()=>{
@@ -60,12 +65,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return ()=> subscription.unsubscribe()
   },[])
 
+  // Realtime balance subscription
+  useEffect(()=>{
+    if(!user?.id) return
+    const channel = supabase.channel(`profile-${user.id}`)
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'profiles', filter:`id=eq.${user.id}` }, (payload:any)=>{
+        if(payload.new) setProfile(payload.new as Profile)
+      })
+      .subscribe()
+    return ()=> { supabase.removeChannel(channel) }
+  },[user?.id])
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null); setProfile(null)
   }
 
-  return <Ctx.Provider value={{ user, profile, loading, signOut, refresh }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ user, profile, loading, signOut, refresh, updateBalance }}>{children}</Ctx.Provider>
 }
 
 export const useAuth = () => useContext(Ctx)
